@@ -92,7 +92,7 @@ public class InputScript extends GVRScript implements CursorControllerListener {
         }
 
         // set the default text
-        setTextOnMainThread(SELECT_TEXT);
+        // setTextOnMainThread(SELECT_TEXT);
 
         GVRViewSceneObject text = new GVRViewSceneObject(gvrContext, textView,
                 gvrContext.createQuad(30.0f, 20.0f));
@@ -129,8 +129,7 @@ public class InputScript extends GVRScript implements CursorControllerListener {
 
     }
 
-    private class CubeSensor extends GVRBaseSensor
-            implements ISensorEvents {
+    private class CubeSensor extends GVRBaseSensor implements ISensorEvents {
         private GVRSceneObject selected;
         private int selectedCursorId;
 
@@ -147,53 +146,17 @@ public class InputScript extends GVRScript implements CursorControllerListener {
             int id = event.getCursorController().getId();
             // Safe to assume that the returned object is a cube
             Cube cube = (Cube) event.getObject();
-            if (cursor == null
-                    || (selected != null && selectedCursorId != id)) {
-                Log.d(TAG, "onSensorEvent Return null");
-                return;
-            }
-
-            if (event.isActive() == false && selected != null
-                    && id == selectedCursorId) {
-                cursor.removeChildObject(selected);
-                selected.getTransform().setPosition(
-                        +cursor.getTransform().getPositionX()
-                                + selected.getTransform().getPositionX(),
-                        +cursor.getTransform().getPositionY()
-                                + selected.getTransform().getPositionY(),
-                        +cursor.getTransform().getPositionZ()
-                                + selected.getTransform().getPositionZ());
-                selected = null;
-                selectedCursorId = -1;
-            }
-
-            if (event.isActive()) {
-                if (cube.isColliding(cursor) && selected == null) {
-                    selected = cube;
-                    selectedCursorId = id;
-                    event.getObject().getTransform()
-                            .setPosition(-cursor.getTransform().getPositionX()
-                                    + selected.getTransform().getPositionX(),
-                            -cursor.getTransform().getPositionY()
-                                    + selected.getTransform().getPositionY(),
-                            -cursor.getTransform().getPositionZ()
-                                    + selected.getTransform().getPositionZ());
-                    cursor.addChildObject(selected);
-
+            if (event.isOver()) {
+                if (event.isActive()) {
                     cube.setGreen();
-                    setTextOnMainThread(MOVE_CUBE_TEXT);
-                }
-            } else if (event.isOver()) {
-                if (cube.isColliding(cursor)) {
-                    cube.setRed();
-                    setTextOnMainThread(BUTTON_SELECT_TEXT);
+
                 } else {
-                    cube.setGrey();
-                    setTextOnMainThread(SELECT_TEXT);
+                    cube.setRed();
+
                 }
             } else {
                 cube.setGrey();
-                setTextOnMainThread(SELECT_TEXT);
+
             }
         }
     }
@@ -280,7 +243,7 @@ public class InputScript extends GVRScript implements CursorControllerListener {
         GVRSceneObject sceneObject = new GVRSceneObject(gvrContext);
         Future<GVRTexture> texture = gvrContext.loadFutureTexture(
                 new GVRAndroidResource(gvrContext, R.raw.earthmap1k));
-
+        sceneObject.getTransform().setScale(0.15f, 0.15f, 0.15f);
         GVRMaterial material = new GVRMaterial(gvrContext,
                 shaderManager.getShaderId());
 
