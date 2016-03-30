@@ -15,6 +15,8 @@
 
 package org.gearvrf.input.events;
 
+import java.util.List;
+
 import org.gearvrf.GVRBaseSensor;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRCursorController;
@@ -26,23 +28,21 @@ import org.gearvrf.GVRScript;
 import org.gearvrf.ISensorEvents;
 import org.gearvrf.SensorEvent;
 import org.gearvrf.io.CursorControllerListener;
-import org.gearvrf.io.GVRCursorType;
+import org.gearvrf.io.GVRControllerType;
+
 import org.gearvrf.io.GVRInputManager;
 import org.gearvrf.scene_objects.GVRSphereSceneObject;
 import org.gearvrf.scene_objects.GVRViewSceneObject;
 import org.gearvrf.scene_objects.view.GVRFrameLayout;
 import org.gearvrf.utility.Log;
 
-import android.graphics.Point;
 import android.os.Handler;
 import android.os.Message;
-import android.view.Display;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.MotionEvent.PointerCoords;
 import android.view.MotionEvent.PointerProperties;
-import android.widget.ListView;
 import android.widget.TextView;
 
 public class EventsScript extends GVRScript {
@@ -82,22 +82,22 @@ public class EventsScript extends GVRScript {
     public EventsScript(EventsActivity activity,
             final GVRFrameLayout frameLayout, final TextView keyTextView) {
         this.frameLayout = frameLayout;
-        final String keyPressed = activity.getResources()
-                .getString(R.string.keyCode);
+        final String keyPressed = activity.getResources().getString(
+                R.string.keyCode);
 
         mainThreadHandler = new Handler(activity.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                // dispatch motion event
-                MotionEvent motionEvent = (MotionEvent) msg.obj;
-                frameLayout.dispatchTouchEvent(motionEvent);
-                frameLayout.invalidate();
-                motionEvent.recycle();
-
                 if (msg.what == KEY_EVENT) {
                     int keyCode = msg.arg1;
                     keyTextView.setText(String.format("%s %s ", keyPressed,
                             KeyEvent.keyCodeToString(keyCode)));
+                } else {
+                    // dispatch motion event
+                    MotionEvent motionEvent = (MotionEvent) msg.obj;
+                    frameLayout.dispatchTouchEvent(motionEvent);
+                    frameLayout.invalidate();
+                    motionEvent.recycle();
                 }
             }
         };
@@ -136,14 +136,25 @@ public class EventsScript extends GVRScript {
 
         @Override
         public void onSensorEvent(SensorEvent event) {
-            final MotionEvent motionEvent = event.getCursorController()
-                    .getMotionEvent();
-            if (motionEvent != null
-                    && motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
-                pointerCoords.x = savedHitPointX
-                        + ((motionEvent.getX() - savedMotionEventX) * SCALE);
-                pointerCoords.y = savedHitPointY
-                        + ((motionEvent.getY() - savedMotionEventY) * SCALE);
+            final List<MotionEvent> motionEvents = event.getCursorController()
+                    .getMotionEvents();
+            for (MotionEvent motionEvent : motionEvents) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                    float[] hitPoint = event.getHitPoint();
+                    pointerCoords.x = (hitPoint[0] + HALF_QUAD_X) * frameWidth;
+                    pointerCoords.y = -(hitPoint[1] - HALF_QUAD_Y)
+                            * frameHeight;
+                    savedMotionEventX = motionEvent.getX();
+                    savedMotionEventY = motionEvent.getY();
+
+                    savedHitPointX = pointerCoords.x;
+                    savedHitPointY = pointerCoords.y;
+                } else {
+                    pointerCoords.x = savedHitPointX
+                            + ((motionEvent.getX() - savedMotionEventX) * SCALE);
+                    pointerCoords.y = savedHitPointY
+                            + ((motionEvent.getY() - savedMotionEventY) * SCALE);
+                }
 
                 final MotionEvent clone = MotionEvent.obtain(
                         motionEvent.getDownTime(), motionEvent.getEventTime(),
@@ -154,43 +165,18 @@ public class EventsScript extends GVRScript {
                 Message message = Message.obtain(mainThreadHandler, 0, 0, 0,
                         clone);
                 mainThreadHandler.sendMessage(message);
+            }
 
-            } else {
-                KeyEvent keyEvent = event.getCursorController().getKeyEvent();
+            List<KeyEvent> keyEvents = event.getCursorController()
+                    .getKeyEvents();
 
-                if (keyEvent == null) {
-                    return;
-                }
-
-                float[] hitPoint = event.getHitPoint();
-
-                pointerCoords.x = (hitPoint[0] + HALF_QUAD_X) * frameWidth;
-                pointerCoords.y = -(hitPoint[1] - HALF_QUAD_Y) * frameHeight;
-
-                if (keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
-                    if (motionEvent != null) {
-                        // save the co ordinates on down
-                        savedMotionEventX = motionEvent.getX();
-                        savedMotionEventY = motionEvent.getY();
-                    }
-                    savedHitPointX = pointerCoords.x;
-                    savedHitPointY = pointerCoords.y;
-                }
-
-                MotionEvent clone = getMotionEvent(keyEvent.getDownTime(),
-                        keyEvent.getAction());
+            for (KeyEvent keyEvent : keyEvents) {
 
                 Message message = Message.obtain(mainThreadHandler, KEY_EVENT,
-                        keyEvent.getKeyCode(), 0, clone);
+                        keyEvent.getKeyCode(), 0, null);
                 mainThreadHandler.sendMessage(message);
             }
-        }
 
-        private MotionEvent getMotionEvent(long time, int action) {
-            MotionEvent event = MotionEvent.obtain(time, time, action, 1,
-                    pointerProperties, pointerCoordsArray, 0, 0, 1f, 1f, 0, 0,
-                    InputDevice.SOURCE_TOUCHSCREEN, 0);
-            return event;
         }
     };
 
@@ -198,7 +184,7 @@ public class EventsScript extends GVRScript {
 
         @Override
         public void onCursorControllerRemoved(GVRCursorController controller) {
-            if (controller.getCursorType() == GVRCursorType.GAZE) {
+            if (controller.getControllerType() == GVRControllerType.GAZE) {
                 controller.resetSceneObject();
                 controller.setEnable(false);
             }
@@ -207,7 +193,7 @@ public class EventsScript extends GVRScript {
         @Override
         public void onCursorControllerAdded(GVRCursorController controller) {
             // Only allow only gaze
-            if (controller.getCursorType() == GVRCursorType.GAZE) {
+            if (controller.getControllerType() == GVRControllerType.GAZE) {
                 GVRSceneObject cursor = new GVRSphereSceneObject(context);
                 GVRRenderData cursorRenderData = cursor.getRenderData();
                 GVRMaterial material = cursorRenderData.getMaterial();

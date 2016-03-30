@@ -14,6 +14,8 @@
  */
 package org.gearvrf.io;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Future;
 
@@ -46,8 +48,7 @@ public class InputScript extends GVRScript implements CursorControllerListener {
     private static final String BUTTON_SELECT_TEXT = "Press and hold down a button to select";
     private static final String MOVE_CUBE_TEXT = "Now move the cube";
 
-    private static final float[] INITIAL_CURSOR_POSITION = { 0.0f, 0.0f,
-            -7.0f };
+    private static final float[] INITIAL_CURSOR_POSITION = { 0.0f, 0.0f, -7.0f };
     private static final float NEAR_DEPTH = -2.0f;
     private static final float FAR_DEPTH = -30.0f;
 
@@ -56,6 +57,8 @@ public class InputScript extends GVRScript implements CursorControllerListener {
     private GVRContext gvrContext = null;
     private CustomShaderManager shaderManager;
     private GVRScene mainScene;
+    private List<GVRCursorController> controllers;
+    private GVRCursorController gazeController;
 
     // FPS variables
     private int frames = 0;
@@ -67,6 +70,7 @@ public class InputScript extends GVRScript implements CursorControllerListener {
 
     public InputScript(GVRTextView textView) {
         this.textView = textView;
+        controllers = new ArrayList<GVRCursorController>();
     }
 
     @Override
@@ -75,10 +79,10 @@ public class InputScript extends GVRScript implements CursorControllerListener {
         random = new Random();
         mainScene = gvrContext.getNextMainScene();
         shaderManager = new CustomShaderManager(gvrContext);
-        mainScene.getMainCameraRig().getLeftCamera().setBackgroundColor(1.0f,
-                1.0f, 1.0f, 1.0f);
-        mainScene.getMainCameraRig().getRightCamera().setBackgroundColor(1.0f,
-                1.0f, 1.0f, 1.0f);
+        mainScene.getMainCameraRig().getLeftCamera()
+                .setBackgroundColor(1.0f, 1.0f, 1.0f, 1.0f);
+        mainScene.getMainCameraRig().getRightCamera()
+                .setBackgroundColor(1.0f, 1.0f, 1.0f, 1.0f);
 
         addSurroundings(gvrContext, mainScene);
 
@@ -151,8 +155,7 @@ public class InputScript extends GVRScript implements CursorControllerListener {
             int id = event.getCursorController().getId();
             // Safe to assume that the returned object is a cube
             Cube cube = (Cube) event.getObject();
-            if (cursor == null
-                    || (selected != null && selectedCursorId != id)) {
+            if (cursor == null || (selected != null && selectedCursorId != id)) {
                 Log.d(TAG, "onSensorEvent Return null");
                 return;
             }
@@ -175,13 +178,18 @@ public class InputScript extends GVRScript implements CursorControllerListener {
                 if (cube.isColliding(cursor) && selected == null) {
                     selected = cube;
                     selectedCursorId = id;
-                    event.getObject().getTransform()
-                            .setPosition(-cursor.getTransform().getPositionX()
-                                    + selected.getTransform().getPositionX(),
-                            -cursor.getTransform().getPositionY()
-                                    + selected.getTransform().getPositionY(),
-                            -cursor.getTransform().getPositionZ()
-                                    + selected.getTransform().getPositionZ());
+                    event.getObject()
+                            .getTransform()
+                            .setPosition(
+                                    -cursor.getTransform().getPositionX()
+                                            + selected.getTransform()
+                                                    .getPositionX(),
+                                    -cursor.getTransform().getPositionY()
+                                            + selected.getTransform()
+                                                    .getPositionY(),
+                                    -cursor.getTransform().getPositionZ()
+                                            + selected.getTransform()
+                                                    .getPositionZ());
                     cursor.addChildObject(selected);
 
                     cube.setGreen();
@@ -223,8 +231,8 @@ public class InputScript extends GVRScript implements CursorControllerListener {
         FutureWrapper<GVRMesh> futureQuadMesh = new FutureWrapper<GVRMesh>(
                 gvrContext.createQuad(CUBE_WIDTH, CUBE_WIDTH));
         Future<GVRTexture> futureCubemapTexture = gvrContext
-                .loadFutureCubemapTexture(
-                        new GVRAndroidResource(gvrContext, R.raw.earth));
+                .loadFutureCubemapTexture(new GVRAndroidResource(gvrContext,
+                        R.raw.earth));
 
         GVRMaterial cubemapMaterial = new GVRMaterial(gvrContext,
                 GVRMaterial.GVRShaderType.Cubemap.ID);
@@ -238,16 +246,16 @@ public class InputScript extends GVRScript implements CursorControllerListener {
         scene.addSceneObject(frontFace);
         frontFace.getTransform().setPosition(0.0f, 0.0f, -CUBE_WIDTH * 0.5f);
 
-        GVRSceneObject backFace = new GVRSceneObject(gvrContext, futureQuadMesh,
-                futureCubemapTexture);
+        GVRSceneObject backFace = new GVRSceneObject(gvrContext,
+                futureQuadMesh, futureCubemapTexture);
         backFace.getRenderData().setMaterial(cubemapMaterial);
         backFace.setName("back");
         scene.addSceneObject(backFace);
         backFace.getTransform().setPosition(0.0f, 0.0f, CUBE_WIDTH * 0.5f);
         backFace.getTransform().rotateByAxis(180.0f, 0.0f, 1.0f, 0.0f);
 
-        GVRSceneObject leftFace = new GVRSceneObject(gvrContext, futureQuadMesh,
-                futureCubemapTexture);
+        GVRSceneObject leftFace = new GVRSceneObject(gvrContext,
+                futureQuadMesh, futureCubemapTexture);
         leftFace.getRenderData().setMaterial(cubemapMaterial);
         leftFace.setName("left");
         scene.addSceneObject(leftFace);
@@ -281,9 +289,26 @@ public class InputScript extends GVRScript implements CursorControllerListener {
 
     @Override
     public void onCursorControllerAdded(final GVRCursorController controller) {
+
+        if (controller.getControllerType() == GVRControllerType.GAZE) {
+            gazeController = controller;
+        } else {
+            controllers.add(controller);
+            if (gazeController != null && gazeController.isEnabled()) {
+                gazeController.resetSceneObject();
+                gazeController.setEnable(false);
+            }
+        }
+        setupController(controller);
+    }
+
+    private void setupController(GVRCursorController controller) {
         GVRSceneObject sceneObject = new GVRSceneObject(gvrContext);
-        Future<GVRTexture> texture = gvrContext.loadFutureTexture(
-                new GVRAndroidResource(gvrContext, R.raw.earthmap1k));
+        Log.d(TAG, "Info %s %d %d ", controller.getName(),
+                controller.getVendorId(), controller.getProductId());
+        Future<GVRTexture> texture = gvrContext
+                .loadFutureTexture(new GVRAndroidResource(gvrContext,
+                        R.raw.earthmap1k));
 
         GVRMaterial material = new GVRMaterial(gvrContext,
                 shaderManager.getShaderId());
@@ -296,8 +321,8 @@ public class InputScript extends GVRScript implements CursorControllerListener {
         material.setVec3(CustomShaderManager.COLOR_KEY, r, g, b);
         material.setTexture(CustomShaderManager.TEXTURE_KEY, texture);
         material.setMainTexture(texture);
-        Future<GVRMesh> futureCursorMesh = gvrContext.loadFutureMesh(
-                new GVRAndroidResource(gvrContext, R.raw.cursor));
+        Future<GVRMesh> futureCursorMesh = gvrContext
+                .loadFutureMesh(new GVRAndroidResource(gvrContext, R.raw.cursor));
 
         GVRRenderData cursorRenderData = new GVRRenderData(gvrContext);
         cursorRenderData.setMesh(futureCursorMesh);
@@ -320,6 +345,15 @@ public class InputScript extends GVRScript implements CursorControllerListener {
 
     @Override
     public void onCursorControllerRemoved(GVRCursorController controller) {
+        if (controller.getControllerType() == GVRControllerType.GAZE) {
+            gazeController = null;
+        } else {
+            controllers.remove(controller);
+            if (gazeController != null && !gazeController.isEnabled()) {
+                gazeController.setEnable(true);
+                setupController(gazeController);
+            }
+        }
         GVRSceneObject object = controller.getSceneObject();
         mainScene.removeSceneObject(object);
     }
@@ -332,8 +366,9 @@ public class InputScript extends GVRScript implements CursorControllerListener {
         public Cube(GVRContext gvrContext, String name,
                 CustomShaderManager shaderManager) {
             super(gvrContext, true);
-            Future<GVRTexture> texture = gvrContext.loadFutureTexture(
-                    new GVRAndroidResource(gvrContext, R.raw.cube_texture));
+            Future<GVRTexture> texture = gvrContext
+                    .loadFutureTexture(new GVRAndroidResource(gvrContext,
+                            R.raw.cube_texture));
             GVRMaterial material = getRenderData().getMaterial();
             material.setShaderType(shaderManager.getShaderId());
             setColor(material, 0.7f, 0.7f, 0.7f);
