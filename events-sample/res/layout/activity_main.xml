@@ -49,12 +49,13 @@
             android:text="@string/listView"
             android:textSize="20sp" />
 
-        <ListView
+        <Spinner
             android:id="@+id/listView"
             android:layout_width="600dp"
-            android:layout_height="150dp"
+            android:layout_height="wrap_content"
+            android:background="@android:drawable/btn_dropdown"
             android:padding="5dp" >
-        </ListView>
+        </Spinner>
     </LinearLayout>
 
     <TextView

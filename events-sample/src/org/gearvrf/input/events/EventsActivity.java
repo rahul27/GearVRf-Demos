@@ -35,6 +35,7 @@ import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 public class EventsActivity extends GVRActivity {
@@ -45,7 +46,7 @@ public class EventsActivity extends GVRActivity {
     private Button button1, button2;
     private CheckBox checkBox;
     private String buttonPressed, listItemClicked;
-    private ListView listView;
+    private Spinner listView;
 
     private static final List<String> items = new ArrayList<String>(5);
 
@@ -70,13 +71,13 @@ public class EventsActivity extends GVRActivity {
         buttonTextView = (TextView) frameLayout
                 .findViewById(R.id.buttonTextView);
         listTextView = (TextView) frameLayout.findViewById(R.id.listTextView);
-        listView = (ListView) findViewById(R.id.listView);
+        listView = (Spinner) findViewById(R.id.listView);
         listView.setBackgroundColor(Color.LTGRAY);
 
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
                 android.R.layout.simple_list_item_1, items);
         listView.setAdapter(adapter);
-        listView.setOnItemClickListener(itemClickListener);
+        //listView.setOnItemClickListener(itemClickListener);
         button1.setOnClickListener(clickListener);
         button2.setOnClickListener(clickListener);
         checkBox.setOnClickListener(clickListener);
