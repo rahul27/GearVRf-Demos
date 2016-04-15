@@ -29,6 +29,8 @@ import android.graphics.Point;
 import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.view.Display;
 import android.view.InputDevice;
@@ -39,7 +41,6 @@ import android.view.MotionEvent.PointerProperties;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.EditText;
-
 
 public class EditorUtils {
     private GVRContext gvrContext;
@@ -81,16 +82,36 @@ public class EditorUtils {
         frameLayout = new GVRFrameLayout(activity);
         View.inflate(activity, R.layout.main, frameLayout);
 
-        EditText editor = (EditText) frameLayout.findViewById(R.id.editor);
+        final EditText editor = (EditText) frameLayout
+                .findViewById(R.id.editor);
         editor.requestFocus();
+
+        editor.addTextChangedListener(new TextWatcher() {
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before,
+                    int count) {
+            }
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count,
+                    int after) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                frameLayout.invalidate();
+            }
+        });
+
         updateButton = (TextView) frameLayout.findViewById(R.id.update);
         updateButton.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View view) {
-                    android.util.Log.d("Editor", "update was clicked");
-                    // get text
-                    // execute script
-                }
-            });
+            public void onClick(View view) {
+                android.util.Log.d("Editor", "update was clicked");
+                // get text
+                // execute script
+            }
+        });
 
         mainThreadHandler = new Handler(activity.getMainLooper()) {
             @Override
@@ -99,7 +120,7 @@ public class EditorUtils {
                     KeyEvent keyEvent = (KeyEvent) msg.obj;
                     frameLayout.dispatchKeyEvent(keyEvent);
                     frameLayout.invalidate();
-                    android.util.Log.d("Editor", "key: " + keyEvent);
+                    // android.util.Log.d("Editor", "key: " + keyEvent);
                 } else {
                     // dispatch motion event
                     MotionEvent motionEvent = (MotionEvent) msg.obj;
@@ -114,25 +135,26 @@ public class EditorUtils {
     }
 
     public void show() {
-        if(!inflated) {
+        if (!inflated) {
             activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        inflate();
-                    }
-                });
+                @Override
+                public void run() {
+                    inflate();
+                }
+            });
         }
 
-        while(!inflated) {
+        while (!inflated) {
             SystemClock.sleep(500);
         }
 
-        if(layoutSceneObject != null) {
+        if (layoutSceneObject != null) {
             gvrContext.getMainScene().addSceneObject(layoutSceneObject);
             return;
         }
 
-        layoutSceneObject = new GVRViewSceneObject(gvrContext, frameLayout, gvrContext.createQuad(QUAD_X, QUAD_Y));
+        layoutSceneObject = new GVRViewSceneObject(gvrContext, frameLayout,
+                gvrContext.createQuad(QUAD_X, QUAD_Y));
 
         layoutSceneObject.getTransform().setPosition(0.0f, 0.0f, DEPTH);
 
@@ -140,7 +162,7 @@ public class EditorUtils {
         frameHeight = frameLayout.getHeight();
 
         GVRBaseSensor sensor = new GVRBaseSensor(gvrContext);
-        layoutSceneObject.getEventReceiver().addListener(eventListener);
+        layoutSceneObject.getEventReceiver().addListener(sensorEvents);
         layoutSceneObject.setSensor(sensor);
 
         gvrContext.getMainScene().addSceneObject(layoutSceneObject);
@@ -150,71 +172,29 @@ public class EditorUtils {
         gvrContext.getMainScene().removeSceneObject(layoutSceneObject);
     }
 
-    private ISensorEvents eventListener = new ISensorEvents() {
-        private static final float SCALE = 10.0f;
-        private float savedMotionEventX, savedMotionEventY, savedHitPointX,
-                savedHitPointY;
-
+    private ISensorEvents sensorEvents = new ISensorEvents() {
         @Override
-        public void onSensorEvent(SensorEvent event) {
-            final MotionEvent motionEvent = event.getCursorController()
-                    .getMotionEvent();
-            if (motionEvent != null
-                    && motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
-                pointerCoords.x = savedHitPointX
-                        + ((motionEvent.getX() - savedMotionEventX) * SCALE);
-                pointerCoords.y = savedHitPointY
-                        + ((motionEvent.getY() - savedMotionEventY) * SCALE);
+        public void onSensorEvent(final SensorEvent event) {
 
-                final MotionEvent clone = MotionEvent.obtain(
-                        motionEvent.getDownTime(), motionEvent.getEventTime(),
-                        motionEvent.getAction(), 1, pointerProperties,
-                        pointerCoordsArray, 0, 0, 1f, 1f, 0, 0,
-                        InputDevice.SOURCE_TOUCHSCREEN, 0);
+            final int action;
+            final KeyEvent keyEvent = event.getCursorController().getKeyEvent();
 
+            if (keyEvent != null) {
+                action = keyEvent.getAction();
+
+                float[] hitPoint = event.getHitPoint();
+                float x = (hitPoint[0] + HALF_QUAD_X) / QUAD_X;
+                float y = -(hitPoint[1] - HALF_QUAD_Y) / QUAD_Y;
+                pointerCoords.x = x * frameWidth;
+                pointerCoords.y = y * frameHeight;
+                long now = SystemClock.uptimeMillis();
+                final MotionEvent clone = MotionEvent.obtain(now, now + 1,
+                        action, 1, pointerProperties, pointerCoordsArray, 0, 0,
+                        1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
                 Message message = Message.obtain(mainThreadHandler, 0, 0, 0,
                         clone);
                 mainThreadHandler.sendMessage(message);
-
-            } else {
-                KeyEvent keyEvent = event.getCursorController().getKeyEvent();
-
-                if (keyEvent == null) {
-                    return;
-                }
-
-                android.util.Log.d("Editor", "got key event");
-                float[] hitPoint = event.getHitPoint();
-
-                pointerCoords.x = (hitPoint[0] + HALF_QUAD_X) * frameWidth;
-                pointerCoords.y = -(hitPoint[1] - HALF_QUAD_Y) * frameHeight;
-
-                if (keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
-                    if (motionEvent != null) {
-                        // save the co ordinates on down
-                        savedMotionEventX = motionEvent.getX();
-                        savedMotionEventY = motionEvent.getY();
-                    }
-                    savedHitPointX = pointerCoords.x;
-                    savedHitPointY = pointerCoords.y;
-                }
-
-                MotionEvent clone = getMotionEvent(keyEvent.getDownTime(),
-                        keyEvent.getAction());
-
-                //Message message = Message.obtain(mainThreadHandler, KEY_EVENT, keyEvent.getKeyCode(), 0, clone);
-                Message message = Message.obtain(mainThreadHandler, KEY_EVENT, 0, 0, keyEvent);
-                mainThreadHandler.sendMessage(message);
             }
         }
-
-        private MotionEvent getMotionEvent(long time, int action) {
-            MotionEvent event = MotionEvent.obtain(time, time, action, 1,
-                    pointerProperties, pointerCoordsArray, 0, 0, 1f, 1f, 0, 0,
-                    InputDevice.SOURCE_TOUCHSCREEN, 0);
-            return event;
-        }
     };
-
 }
-
