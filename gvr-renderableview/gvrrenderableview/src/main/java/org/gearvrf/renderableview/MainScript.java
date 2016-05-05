@@ -15,10 +15,14 @@
 
 package org.gearvrf.renderableview;
 
+import android.graphics.Color;
+
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRScene;
 import org.gearvrf.GVRScript;
 import org.gearvrf.scene_objects.GVRCubeSceneObject;
 import org.gearvrf.scene_objects.GVRViewSceneObject;
+import org.gearvrf.scene_objects.view.GVRView;
 
 public class MainScript extends GVRScript {
     private final MainActivity mActivity;
@@ -35,34 +39,40 @@ public class MainScript extends GVRScript {
     public void onInit(final GVRContext gvrContext) throws Throwable {
         // GVRCubeSceneObject - Just to take cube mesh.
         GVRCubeSceneObject cube = new GVRCubeSceneObject(gvrContext);
+        GVRScene scene = gvrContext.getNextMainScene();
 
-        mLayoutLeftSceneObject = new GVRViewSceneObject(gvrContext,
+        scene.getMainCameraRig().getLeftCamera().setBackgroundColor(Color.WHITE);
+        scene.getMainCameraRig().getRightCamera().setBackgroundColor(Color.WHITE);
+        /*mLayoutLeftSceneObject = new GVRViewSceneObject(gvrContext,
                 mActivity.getFrameLayoutLeft(), cube.getRenderData().getMesh());
 
-        gvrContext.getMainScene().addSceneObject(mLayoutLeftSceneObject);
+        scene.addSceneObject(mLayoutLeftSceneObject);
 
         mLayoutLeftSceneObject.getTransform().setPosition(-1.0f, 0.0f, -2.5f);
 
         mWebSceneObject = new GVRViewSceneObject(gvrContext,
                 mActivity.getWebView(), cube.getRenderData().getMesh());
 
-        gvrContext.getMainScene().addSceneObject(mWebSceneObject);
+        scene.addSceneObject(mWebSceneObject);
 
         mWebSceneObject.getTransform().setPosition(1.0f, 0.0f, -2.5f);
-
-        mTextSceneObject = new GVRViewSceneObject(gvrContext,
-                mActivity.getTextView(), 2.0f, 1.0f);
-        gvrContext.getMainScene().addSceneObject(mTextSceneObject);
-        mTextSceneObject.getTransform().setPosition(0.0f, -2.0f, -2.5f);
+        */
+        GVRView[] views = mActivity.getTextView();
+        for(int i = 0; i< MainActivity.COUNT ;i++) {
+            mTextSceneObject = new GVRViewSceneObject(gvrContext,
+                    views[i], 2.0f, 1.0f);
+            scene.addSceneObject(mTextSceneObject);
+            mTextSceneObject.getTransform().setPosition(0.0f, -2.0f, -2.5f);
+        }
 
         cube.close();
     }
 
     @Override
     public void onStep() {
-        mLayoutLeftSceneObject.getTransform().rotateByAxis(0.5f, 1, 1, 0);
+        //mLayoutLeftSceneObject.getTransform().rotateByAxis(0.5f, 1, 1, 0);
 
-        mWebSceneObject.getTransform().rotateByAxis(-0.5f, 1, 1, 0);
+        //mWebSceneObject.getTransform().rotateByAxis(-0.5f, 1, 1, 0);
     }
 
 }

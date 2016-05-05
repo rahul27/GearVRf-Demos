@@ -33,7 +33,8 @@ public class MainActivity extends GVRActivity {
 
     private GVRFrameLayout mFrameLayoutLeft;
     private GVRWebView mWebView;
-    private GVRTextView mTextView;
+    private GVRTextView[] mTextViews;
+    public static final int COUNT = 40;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -46,7 +47,7 @@ public class MainActivity extends GVRActivity {
     }
 
     private void createView() {
-        mFrameLayoutLeft = new GVRFrameLayout(this);
+        /*mFrameLayoutLeft = new GVRFrameLayout(this);
         mFrameLayoutLeft.setLayoutParams(new FrameLayout.LayoutParams(
                     LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
         mFrameLayoutLeft.setBackgroundColor(Color.CYAN);
@@ -57,10 +58,14 @@ public class MainActivity extends GVRActivity {
         mWebView.loadUrl("http://www.gearvrf.org");
         mWebView.setLayoutParams(new FrameLayout.LayoutParams(
                     LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-
-        mTextView = new GVRTextView(this);
-        mTextView.setText("Android's Rederable Views");
-        mTextView.setTextColor(Color.WHITE);
+        */
+        mTextViews = new GVRTextView[COUNT];
+        for(int i = 0 ;i< COUNT ;i++) {
+            GVRTextView mTextView = new GVRTextView(this, 400, 400);
+            mTextView.setText("Android's Rederable Views");
+            mTextView.setTextColor(Color.WHITE);
+            mTextViews[i] = mTextView;
+        }
     }
 
     public GVRView getFrameLayoutLeft() {
@@ -71,7 +76,7 @@ public class MainActivity extends GVRActivity {
         return mWebView;
     }
 
-    public GVRView getTextView() {
-        return mTextView;
+    public GVRView[] getTextView() {
+        return mTextViews;
     }
 }
