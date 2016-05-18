@@ -37,33 +37,40 @@ public class MeshAnimationScript extends GVRScript {
         mGVRContext = gvrContext;
         mAnimationEngine = gvrContext.getAnimationEngine();
 
-        GVRScene mainScene = gvrContext.getNextMainScene(new Runnable() {
-            @Override
-            public void run() {
-                mAssimpAnimation.start(mAnimationEngine);
-            }
-        });
 
-        try {
-            mCharacter = gvrContext.loadModel(mModelPath);
-            mCharacter.getTransform().setPosition(0.0f, -10.0f, -10.0f);
-            mCharacter.getTransform().setRotationByAxis(90.0f, 1.0f, 0.0f, 0.0f);
-            mCharacter.getTransform().setRotationByAxis(40.0f, 0.0f, 1.0f, 0.0f);
-            mCharacter.getTransform().setScale(1.5f, 1.5f, 1.5f);
 
-            mainScene.addSceneObject(mCharacter);
 
-            mAssimpAnimation = mCharacter.getAnimations().get(0);
-            mAssimpAnimation.setRepeatMode(GVRRepeatMode.REPEATED).setRepeatCount(-1);
-        } catch (IOException e) {
-            e.printStackTrace();
-            mActivity.finish();
-            mActivity = null;
-            Log.e(TAG, "One or more assets could not be loaded.");
-        }
     }
-
+    boolean flag = true;
     @Override
     public void onStep() {
+        if(flag){
+            GVRScene mainScene = mGVRContext.getNextMainScene(new Runnable() {
+                @Override
+                public void run() {
+                    //mAssimpAnimation.start(mAnimationEngine);
+                }
+            });
+
+            try {
+                mCharacter = mGVRContext.loadModel(mModelPath);
+                mCharacter.getTransform().setPosition(0.0f, -10.0f, -10.0f);
+                mCharacter.getTransform().setRotationByAxis(90.0f, 1.0f, 0.0f, 0.0f);
+                mCharacter.getTransform().setRotationByAxis(40.0f, 0.0f, 1.0f, 0.0f);
+                mCharacter.getTransform().setScale(1.5f, 1.5f, 1.5f);
+
+                mainScene.addSceneObject(mCharacter);
+
+                //mAssimpAnimation = mCharacter.getAnimations().get(0);
+                //mAssimpAnimation.setRepeatMode(GVRRepeatMode.REPEATED).setRepeatCount(-1);
+            } catch (IOException e) {
+                e.printStackTrace();
+                mActivity.finish();
+                mActivity = null;
+                Log.e(TAG, "One or more assets could not be loaded.");
+            }
+            flag = false;
+
+        }
     }
 }
