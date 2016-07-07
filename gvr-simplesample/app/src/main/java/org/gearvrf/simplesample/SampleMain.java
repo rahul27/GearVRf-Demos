@@ -16,6 +16,7 @@
 package org.gearvrf.simplesample;
 
 import android.graphics.Color;
+import android.util.Log;
 
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRCameraRig;
@@ -24,9 +25,13 @@ import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRScript;
 import org.gearvrf.GVRTexture;
+import org.gearvrf.scene_objects.GVRModelSceneObject;
+
+import java.io.IOException;
 
 public class SampleMain extends GVRScript {
 
+    private static final String TAG = SampleMain.class.getSimpleName();
     private GVRContext mGVRContext;
 
     @Override
@@ -46,7 +51,7 @@ public class SampleMain extends GVRScript {
                 .setBackgroundColor(Color.WHITE);
 
         // load texture
-        GVRTexture texture = gvrContext.loadTexture(new GVRAndroidResource(
+        /*GVRTexture texture = gvrContext.loadTexture(new GVRAndroidResource(
                 mGVRContext, R.drawable.gearvr_logo));
 
         // create a scene object (this constructor creates a rectangular scene
@@ -58,7 +63,29 @@ public class SampleMain extends GVRScript {
         sceneObject.getTransform().setPosition(0.0f, 0.0f, -3.0f);
 
         // add the scene object to the scene graph
-        scene.addSceneObject(sceneObject);
+        scene.addSceneObject(sceneObject);*/
+
+
+        GVRModelSceneObject sceneObject;
+        int count = 1;
+        int row = 1;
+        try {
+            for (float i = -100.0f; i < 100; i = i + 20) {
+                Log.d(TAG, "Row is " + row++);
+                for (float f = -20.0f; f <= -5.0f; f = f + 5) {
+                    Log.d(TAG, "Count is" + count++);
+                    //sceneObject = gvrContext.loadModel("boxer.fbx");
+                    sceneObject = gvrContext.getAssetLoader().loadModel("boxer.fbx",scene);
+                    sceneObject.getTransform().setPosition(0.0f, 0.0f, f);
+                    sceneObject.getTransform().rotateByAxisWithPivot(i, 0.0f,
+                            1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                    //scene.addSceneObject(sceneObject);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
     }
 
