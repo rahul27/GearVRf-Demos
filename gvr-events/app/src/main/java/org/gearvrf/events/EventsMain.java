@@ -45,6 +45,7 @@ import java.util.List;
 
 public class EventsMain extends GVRMain {
     private static final String TAG = EventsMain.class.getSimpleName();
+    private static final String LAYOUT_1 = "Layout1";
     private static final int KEY_EVENT = 1;
     private static final int MOTION_EVENT = 2;
 
@@ -115,9 +116,12 @@ public class EventsMain extends GVRMain {
         mainScene.addSceneObject(layoutSceneObject);
 
         layoutSceneObject.getTransform().setPosition(0.0f, 0.0f, DEPTH);
+        layoutSceneObject.setName(LAYOUT_1);
 
         frameWidth = frameLayout.getWidth();
         frameHeight = frameLayout.getHeight();
+
+
 
         // set up the input manager for the main scene
         GVRInputManager inputManager = gvrContext.getInputManager();
@@ -137,6 +141,9 @@ public class EventsMain extends GVRMain {
 
         @Override
         public void onSensorEvent(SensorEvent event) {
+            if(event.getObject().getName().equals(LAYOUT_1)){
+                // process events for layout 1
+            }
             List<MotionEvent> motionEvents = event.getCursorController().getMotionEvents();
 
             for (MotionEvent motionEvent : motionEvents) {
