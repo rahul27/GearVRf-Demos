@@ -20,13 +20,24 @@ import android.graphics.Color;
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRCameraRig;
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRMaterial;
+import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRScript;
 import org.gearvrf.GVRTexture;
+import org.gearvrf.ZipLoader;
+import org.gearvrf.animation.GVRAnimation;
+import org.gearvrf.animation.GVRRepeatMode;
+import org.gearvrf.utility.Log;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.Future;
 
 public class SampleMain extends GVRScript {
 
+    private static final String TAG = SampleMain.class.getSimpleName();
     private GVRContext mGVRContext;
 
     @Override
@@ -41,9 +52,9 @@ public class SampleMain extends GVRScript {
         // set background color
         GVRCameraRig mainCameraRig = scene.getMainCameraRig();
         mainCameraRig.getLeftCamera()
-                .setBackgroundColor(Color.WHITE);
+                .setBackgroundColor(Color.BLACK);
         mainCameraRig.getRightCamera()
-                .setBackgroundColor(Color.WHITE);
+                .setBackgroundColor(Color.BLACK);
 
         // load texture
         GVRTexture texture = gvrContext.loadTexture(new GVRAndroidResource(
@@ -58,12 +69,38 @@ public class SampleMain extends GVRScript {
         sceneObject.getTransform().setPosition(0.0f, 0.0f, -3.0f);
 
         // add the scene object to the scene graph
-        scene.addSceneObject(sceneObject);
+        //scene.addSceneObject(sceneObject);
 
+        try {
+            List<Future<GVRTexture>> loaderTextures = ZipLoader.load(gvrContext,
+                    "loading.zip", new ZipLoader.ZipEntryProcessor<Future<GVRTexture>>() {
+                        @Override
+                        public Future<GVRTexture> getItem(GVRContext context, GVRAndroidResource
+                                resource) {
+                            return context.loadFutureTexture(resource);
+                        }
+                    });
+
+            GVRSceneObject loadingObject = new GVRSceneObject(gvrContext, 1.0f, 1.0f);
+
+            GVRRenderData renderData = loadingObject.getRenderData();
+            GVRMaterial loadingMaterial = new GVRMaterial(gvrContext);
+            renderData.setMaterial(loadingMaterial);
+            loadingMaterial.setMainTexture(loaderTextures.get(0));
+            GVRAnimation animation = new GVRImageFrameAnimation(loadingMaterial, 1.5f,
+                    loaderTextures);
+            animation.setRepeatMode(GVRRepeatMode.REPEATED);
+            animation.setRepeatCount(-1);
+            animation.start(mGVRContext.getAnimationEngine());
+
+            loadingObject.getTransform().setPosition(0.0f, 0.0f, -4.0f);
+            scene.addSceneObject(loadingObject);
+        } catch (IOException e) {
+            Log.e(TAG, "Error loading animation", e);
+        }
     }
 
     @Override
     public void onStep() {
     }
-
 }
