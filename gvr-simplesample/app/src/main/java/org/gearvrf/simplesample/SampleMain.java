@@ -16,6 +16,7 @@
 package org.gearvrf.simplesample;
 
 import android.graphics.Color;
+import android.util.Log;
 
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRCameraRig;
@@ -24,10 +25,14 @@ import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRScript;
 import org.gearvrf.GVRTexture;
+import org.gearvrf.scene_objects.GVRCubeSceneObject;
 
 public class SampleMain extends GVRScript {
 
+    private static final String TAG = SampleMain.class.getSimpleName();
     private GVRContext mGVRContext;
+    private GVRSceneObject sceneObject;
+    private  GVRCubeSceneObject cubeSceneObject;
 
     @Override
     public void onInit(GVRContext gvrContext) {
@@ -51,7 +56,7 @@ public class SampleMain extends GVRScript {
 
         // create a scene object (this constructor creates a rectangular scene
         // object that uses the standard 'unlit' shader)
-        GVRSceneObject sceneObject = new GVRSceneObject(gvrContext, 4.0f, 2.0f,
+        sceneObject = new GVRSceneObject(gvrContext, 4.0f, 2.0f,
                 texture);
 
         // set the scene object position
@@ -60,10 +65,25 @@ public class SampleMain extends GVRScript {
         // add the scene object to the scene graph
         scene.addSceneObject(sceneObject);
 
+        cubeSceneObject = new GVRCubeSceneObject(gvrContext);
+        //fix scale to suit the frustum
+        cubeSceneObject.getTransform().setScale(4.0f, 4.0f, 4.0f);
+
+        cubeSceneObject.getTransform().setPosition(0.0f, 0.0f, -3.0f);
+
+        mainCameraRig.addChildObject(cubeSceneObject);
+
+
     }
 
     @Override
     public void onStep() {
+
+        if(cubeSceneObject.isColliding(sceneObject)){
+            Log.d(TAG, "IsColliding");
+        }else{
+            Log.d(TAG, "IsNotColliding");
+        }
     }
 
 }
