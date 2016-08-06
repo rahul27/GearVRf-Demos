@@ -34,6 +34,7 @@ import org.gearvrf.GVREventReceiver;
 
 import org.gearvrf.animation.GVRAnimation;
 import org.gearvrf.animation.GVRAnimationEngine;
+import org.gearvrf.scene_objects.GVRCubeSceneObject;
 import org.gearvrf.scene_objects.GVRModelSceneObject;
 import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
@@ -127,6 +128,11 @@ public class X3DparserScript extends GVRScript
       mainCameraRigTransform.setPosition(newtrans.getPositionX(),
                                          newtrans.getPositionY(),
                                          newtrans.getPositionZ());
+
+      GVRCubeSceneObject cubeSceneObject = new GVRCubeSceneObject(gvrContext, true, gvrContext
+              .loadFutureTexture(new GVRAndroidResource(gvrContext, R.drawable.bottom)));
+      cubeSceneObject.getTransform().setPosition(0.0f, 0.0f, -1.0f);
+      scene.addSceneObject(cubeSceneObject);
 
       // check if a headlight was attached to the model's camera rig
       // during parsing, as specified by the NavigationInfo node.
