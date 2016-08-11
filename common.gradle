@@ -30,7 +30,9 @@ task copyOculusSignature(type: Copy) {
 preBuild {}.dependsOn copyOculusSignature
 
 dependencies {
-    compile(name: 'framework-debug', ext: 'aar')
-    compile(name: 'google-vr-base', ext: 'aar')
-    compile(name: 'google-vr-common', ext: 'aar')
+    compile project(':framework')
+    if (!file('../../GearVRf/GVRf/Framework/framework').exists()){
+        compile(name: 'google-vr-base', ext: 'aar')
+        compile(name: 'google-vr-common', ext: 'aar')
+    }
 }

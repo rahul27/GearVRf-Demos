@@ -1,1 +1,10 @@
 include ':app'
+
+if (file('../../GearVRf/GVRf/Framework/framework').exists()){
+    include ':framework'
+    project(':framework').projectDir = new File('../../GearVRf/GVRf/Framework/framework')
+}else{
+    include ':framework'
+    project(':framework').projectDir = new File('../gearvrf-libs/')
+}
+
