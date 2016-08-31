@@ -14,12 +14,15 @@
  */
 package org.gearvrf.gvreyepicking;
 
+import android.view.MotionEvent;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.gearvrf.*;
 import org.gearvrf.GVRMaterial.GVRShaderType;
+import org.gearvrf.scene_objects.GVRSphereSceneObject;
 import org.gearvrf.utility.Log;
 
 public class SampleMain extends GVRScript {
@@ -55,6 +58,7 @@ public class SampleMain extends GVRScript {
     private GVRPicker mPicker;
 
     private GVRActivity mActivity;
+    private GVRSphereSceneObject cursor;
     
     SampleMain(GVRActivity activity) {
         mActivity = activity;
@@ -71,7 +75,7 @@ public class SampleMain extends GVRScript {
         mainScene.getMainCameraRig().getRightCamera()
                 .setBackgroundColor(1.0f, 1.0f, 1.0f, 1.0f);
         mainScene.getEventReceiver().addListener(mPickHandler);
-        mPicker = new GVRPicker(gvrContext, mainScene);
+        //mPicker = new GVRPicker(gvrContext, mainScene);
 
         /*
          * Adding Boards
@@ -171,6 +175,18 @@ public class SampleMain extends GVRScript {
         attachBoundsCollider(object);
         mainScene.addSceneObject(object);
         mObjects.add(object);
+
+        cursor = new GVRSphereSceneObject(gvrContext, true);
+        GVRMaterial material = new GVRMaterial(mGVRContext, GVRShaderType.BeingGenerated.ID);
+        material.setVec4("u_color", 0.0f, 1.0f, 0.0f, UNPICKED_COLOR_A);
+        cursor.getRenderData().setMaterial(material);
+        cursor.getTransform().setScale(0.5f, 0.5f, 0.5f);
+        cursor.getRenderData().setShaderTemplate(ColorShader.class);
+        cursor.getTransform().setPosition(0.0f, 0.0f, -3.0f);
+        mainScene.getMainCameraRig().addChildObject(cursor);
+
+        GVRObjectPicker objectPicker = new GVRObjectPicker(gvrContext, mainScene);
+        cursor.attachComponent(objectPicker);
     }
 
     @Override
@@ -210,5 +226,17 @@ public class SampleMain extends GVRScript {
     
     private void attachBoundsCollider(GVRSceneObject sceneObject) {
         sceneObject.attachComponent(new GVRMeshCollider(mGVRContext, true));
+    }
+
+    public boolean onSwipe(MotionEvent e, VRTouchPadGestureDetector.SwipeDirection
+            swipeDirection, float velocityX, float velocityY) {
+        if (cursor != null) {
+            if (swipeDirection == VRTouchPadGestureDetector.SwipeDirection.Forward) {
+                cursor.getTransform().translate(0.0f, 0.0f, -1.0f);
+            } else if (swipeDirection == VRTouchPadGestureDetector.SwipeDirection.Backward) {
+                cursor.getTransform().translate(0.0f, 0.0f, 1.0f);
+            }
+        }
+        return true;
     }
 }

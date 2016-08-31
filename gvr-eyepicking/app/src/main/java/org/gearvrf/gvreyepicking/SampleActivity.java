@@ -17,14 +17,42 @@
 package org.gearvrf.gvreyepicking;
 
 import android.os.Bundle;
+import android.view.MotionEvent;
 
 import org.gearvrf.GVRActivity;
 
-public class SampleActivity extends GVRActivity {
-	
+public class SampleActivity extends GVRActivity implements VRTouchPadGestureDetector
+        .OnTouchPadGestureListener {
+    private VRTouchPadGestureDetector mDetector = null;
+    private SampleMain main;
+
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-        setScript(new SampleMain(this), "gvr.xml");
+        main = new SampleMain(this);
+        setScript(main, "gvr.xml");
+        mDetector = new VRTouchPadGestureDetector(this);
+    }
+
+    @Override
+    public boolean onSingleTap(MotionEvent e) {
+        return false;
+    }
+
+    @Override
+    public void onLongPress(MotionEvent e) {
+
+    }
+
+    @Override
+    public boolean onSwipe(MotionEvent e, VRTouchPadGestureDetector.SwipeDirection
+            swipeDirection, float velocityX, float velocityY) {
+        return main.onSwipe(e, swipeDirection, velocityX, velocityY);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        mDetector.onTouchEvent(event);
+        return super.onTouchEvent(event);
     }
 }
