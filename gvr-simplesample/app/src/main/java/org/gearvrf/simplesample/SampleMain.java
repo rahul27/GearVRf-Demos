@@ -15,7 +15,12 @@
 
 package org.gearvrf.simplesample;
 
+import android.app.Activity;
 import android.graphics.Color;
+import android.util.Log;
+import android.view.SurfaceView;
+import android.view.View;
+import android.view.ViewGroup;
 
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRCameraRig;
@@ -61,9 +66,41 @@ public class SampleMain extends GVRScript {
         scene.addSceneObject(sceneObject);
 
     }
-
+    boolean flag = true;
     @Override
     public void onStep() {
+        int level = 0;
+        if (flag){
+            Activity activity = mGVRContext.getActivity();
+
+            ViewGroup group = (ViewGroup) activity.findViewById(android.R.id.content)
+                    .getRootView();
+            printTree(group, 0);
+            flag = false;
+
+        }
+    }
+
+
+    void printTree(View view, int level){
+        Log.d("rahul", "View " + view + " at level " + level);
+
+
+
+        if(view instanceof SurfaceView){
+            Log.d("rahul", "Found surfaceView");
+           // Add your surface view here
+
+        }
+
+        if(view instanceof ViewGroup) {
+            int count = 0;
+            int size = ((ViewGroup) view).getChildCount();
+
+            for(count = 0; count < size; count ++){
+                printTree(((ViewGroup) view).getChildAt(count), level + 1);
+            }
+        }
     }
 
 }
