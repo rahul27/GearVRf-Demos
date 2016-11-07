@@ -22,6 +22,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.MotionEvent.PointerCoords;
 import android.view.MotionEvent.PointerProperties;
+
 import android.widget.TextView;
 
 import org.gearvrf.FutureWrapper;
@@ -40,6 +41,7 @@ import org.gearvrf.io.GVRControllerType;
 import org.gearvrf.io.GVRInputManager;
 import org.gearvrf.scene_objects.GVRViewSceneObject;
 import org.gearvrf.scene_objects.view.GVRFrameLayout;
+import org.gearvrf.scene_objects.view.GVRWebView;
 
 import java.util.List;
 
@@ -51,13 +53,13 @@ public class EventsMain extends GVRMain {
     private GVRViewSceneObject layoutSceneObject;
     private GVRContext context;
 
-    private static final float QUAD_X = 1.0f;
-    private static final float QUAD_Y = 1.0f;
+    private static final float QUAD_X = 2.0f;
+    private static final float QUAD_Y = 2.0f;
     private static final float HALF_QUAD_X = QUAD_X / 2.0f;
     private static final float HALF_QUAD_Y = QUAD_Y / 2.0f;
-    private static final float DEPTH = -1.5f;
+    private static final float DEPTH = -2.0f;
 
-    private final GVRFrameLayout frameLayout;
+    //private final GVRFrameLayout frameLayout;
 
     private int frameWidth;
     private int frameHeight;
@@ -69,6 +71,8 @@ public class EventsMain extends GVRMain {
     private final static PointerCoords pointerCoords;
     private GVRSceneObject cursor;
 
+    private GVRWebView webView;
+
     static {
         PointerProperties properties = new PointerProperties();
         properties.id = 0;
@@ -79,10 +83,12 @@ public class EventsMain extends GVRMain {
     }
 
     public EventsMain(EventsActivity activity,
-                        final GVRFrameLayout frameLayout, final TextView keyTextView) {
-        this.frameLayout = frameLayout;
+                      final GVRFrameLayout frameLayout, final TextView keyTextView, final
+                      GVRWebView webView) {
+        //this.frameLayout = frameLayout;
         final String keyPressed = activity.getResources()
                 .getString(R.string.keyCode);
+        this.webView = webView;
 
         mainThreadHandler = new Handler(activity.getMainLooper()) {
             @Override
@@ -91,8 +97,8 @@ public class EventsMain extends GVRMain {
 
                 if (msg.what == MOTION_EVENT) {
                     MotionEvent motionEvent = (MotionEvent) msg.obj;
-                    frameLayout.dispatchTouchEvent(motionEvent);
-                    frameLayout.invalidate();
+                    webView.dispatchTouchEvent(motionEvent);
+                    webView.invalidate();
                     motionEvent.recycle();
                 }
 
@@ -109,15 +115,15 @@ public class EventsMain extends GVRMain {
     public void onInit(final GVRContext gvrContext) throws Throwable {
         context = gvrContext;
 
-        layoutSceneObject = new GVRViewSceneObject(gvrContext, frameLayout,
+        layoutSceneObject = new GVRViewSceneObject(gvrContext, webView,
                 context.createQuad(QUAD_X, QUAD_Y));
         mainScene = gvrContext.getNextMainScene();
         mainScene.addSceneObject(layoutSceneObject);
 
         layoutSceneObject.getTransform().setPosition(0.0f, 0.0f, DEPTH);
 
-        frameWidth = frameLayout.getWidth();
-        frameHeight = frameLayout.getHeight();
+        frameWidth = webView.getWidth();
+        frameHeight = webView.getHeight();
 
         // set up the input manager for the main scene
         GVRInputManager inputManager = gvrContext.getInputManager();
@@ -128,6 +134,7 @@ public class EventsMain extends GVRMain {
         GVRBaseSensor sensor = new GVRBaseSensor(gvrContext);
         layoutSceneObject.getEventReceiver().addListener(eventListener);
         layoutSceneObject.setSensor(sensor);
+
     }
 
     private ISensorEvents eventListener = new ISensorEvents() {

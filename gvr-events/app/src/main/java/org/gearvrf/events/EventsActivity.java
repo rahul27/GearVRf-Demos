@@ -22,6 +22,8 @@ import org.gearvrf.GVRActivity;
 import org.gearvrf.GVRMain;
 
 import org.gearvrf.scene_objects.view.GVRFrameLayout;
+import org.gearvrf.scene_objects.view.GVRWebView;
+
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -32,6 +34,7 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
@@ -46,6 +49,7 @@ public class EventsActivity extends GVRActivity {
     private CheckBox checkBox;
     private String buttonPressed, listItemClicked;
     private ListView listView;
+    private GVRWebView mWebView;
 
     private static final List<String> items = new ArrayList<String>(5);
 
@@ -82,7 +86,16 @@ public class EventsActivity extends GVRActivity {
         checkBox.setOnClickListener(clickListener);
         buttonPressed = getResources().getString(R.string.buttonPressed);
         listItemClicked = getResources().getString(R.string.listClicked);
-        main = new EventsMain(this, frameLayout, keyTextView);
+
+        mWebView = new GVRWebView(this);
+        mWebView.loadUrl("https://resources.samsungdevelopers.com/Gear_VR/020_GearVR_Framework_Project");
+        mWebView.setLayoutParams(new FrameLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+        if(mWebView.isHardwareAccelerated()){
+            //disable hw acceleration here
+            //mWebView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        }
+        main = new EventsMain(this, frameLayout, keyTextView, mWebView);
         setMain(main, "gvr.xml");
     }
 
