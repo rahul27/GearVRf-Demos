@@ -9,6 +9,19 @@ else if(file("../../../../GearVRf-Demos/common.gradle").exists()) {
     apply from: '../../../../GearVRf-Demos/common.gradle'
 }
 
+allprojects {
+    repositories {
+        jcenter()
+        flatDir {
+            dirs 'libs'
+        }
+    }
+}
+dependencies {
+    compile(name: 'controller', ext: 'aar')
+}
+
+
 android {
     buildTypes {
         release {

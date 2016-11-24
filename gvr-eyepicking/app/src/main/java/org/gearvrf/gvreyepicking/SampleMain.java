@@ -17,12 +17,24 @@ package org.gearvrf.gvreyepicking;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 
 import org.gearvrf.*;
 import org.gearvrf.GVRMaterial.GVRShaderType;
+import org.gearvrf.scene_objects.GVRSphereSceneObject;
 import org.gearvrf.utility.Log;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 public class SampleMain extends GVRScript {
+
+    //private GVRContext mGVRContext;
+
+    private GVRSceneObject pivot;
+
+    boolean onInitDone = false;
+
+
     public class PickHandler implements IPickEvents
     {
         public void onEnter(GVRSceneObject sceneObj, GVRPicker.GVRPickedObject pickInfo)
@@ -49,6 +61,8 @@ public class SampleMain extends GVRScript {
     private static final float PICKED_COLOR_B = 0.0f;
     private static final float PICKED_COLOR_A = 1.0f;
 
+    private static final float SCALE = 200.0f;
+
     private GVRContext mGVRContext = null;
     private List<GVRSceneObject> mObjects = new ArrayList<GVRSceneObject>();
     private IPickEvents mPickHandler = new PickHandler();
@@ -72,6 +86,8 @@ public class SampleMain extends GVRScript {
                 .setBackgroundColor(1.0f, 1.0f, 1.0f, 1.0f);
         mainScene.getEventReceiver().addListener(mPickHandler);
         mPicker = new GVRPicker(gvrContext, mainScene);
+        //mPicker.setEnable(false);
+
 
         /*
          * Adding Boards
@@ -171,7 +187,47 @@ public class SampleMain extends GVRScript {
         attachBoundsCollider(object);
         mainScene.addSceneObject(object);
         mObjects.add(object);
+
+
+
+        pivot = new GVRSceneObject(gvrContext);
+
+        try {
+            GVRSphereSceneObject sphere = new GVRSphereSceneObject(gvrContext, true, gvrContext
+                    .loadFutureTexture(new GVRAndroidResource(gvrContext,"texture.png")));
+            sphere.getTransform().setPosition(0.0f, 0.0f,-20.0f);
+            pivot.addChildObject(sphere);
+            mPicker.setPickRay(0.0f, 0.0f, 0.0f, 0.0f, 0.0f,-20.0f);
+            pivot.attachComponent(mPicker);
+            mainScene.addSceneObject(pivot);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Future<GVRTexture> futureTexture = gvrContext.loadFutureTexture(new
+                GVRAndroidResource(gvrContext, R.drawable.skybox_gridroom));
+        GVRMaterial material = new GVRMaterial(gvrContext);
+        GVRSphereSceneObject skyBox = new GVRSphereSceneObject(gvrContext, false, material);
+        skyBox.getTransform().setScale(SCALE, SCALE, SCALE);
+        skyBox.getRenderData().getMaterial().setMainTexture(futureTexture);
+        mainScene.addSceneObject(skyBox);
+
+        onInitDone = true;
     }
+
+    public void updatePivot(float w, float x, float y, float z){
+        if(onInitDone){
+            //Log.d("rahul", "onUpdate %f %f %f %f" ,w,x,y,z );
+            pivot.getTransform().setRotation(w, x, y, z);
+            //Vector3f position = new Vector3f(0.0f, 0.0f, -20.0f);
+            //Matrix4f matrix4f = pivot.getTransform().getModelMatrix4f();
+            //matrix4f.transformPoint(position, position);
+
+
+        }
+    }
+
 
     @Override
     public void onStep() {
