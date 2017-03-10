@@ -16,18 +16,38 @@
 package org.gearvrf.gvr360Photo;
 
 import android.os.Bundle;
+import android.view.MotionEvent;
 
 import org.gearvrf.GVRActivity;
 
 public class Minimal360PhotoActivity extends GVRActivity
 {
+    Minimal360PhotoMain main;
+    private long lastDownTime = 0;
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
 
-        Minimal360PhotoMain main = new Minimal360PhotoMain();
+        main = new Minimal360PhotoMain();
         setMain(main);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            lastDownTime = event.getDownTime();
+        }
+
+        if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+            // check if it was a quick tap
+            if (event.getEventTime() - lastDownTime < 200) {
+                // pass it as a tap to the Main
+                main.onTap();
+            }
+        }
+
+        return true;
     }
 }
