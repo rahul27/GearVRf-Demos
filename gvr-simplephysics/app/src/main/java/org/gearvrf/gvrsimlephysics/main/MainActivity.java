@@ -38,7 +38,7 @@ public class MainActivity extends GVRActivity implements VRTouchPadGestureDetect
 
     @Override
     public boolean onSwipe(MotionEvent e, VRTouchPadGestureDetector.SwipeDirection swipeDirection, float velocityX, float velocityY) {
-        main.onSwipe(swipeDirection, velocityX);
+        //main.onSwipe(swipeDirection, velocityX);
         return super.onTouchEvent(e);
     }
 }

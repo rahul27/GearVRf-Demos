@@ -1,30 +1,47 @@
 package org.gearvrf.gvrsimlephysics.main;
 
 import android.graphics.Color;
+import android.util.Log;
 import android.view.Gravity;
+import android.view.KeyEvent;
 
+import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRCameraRig;
 import org.gearvrf.GVRComponent;
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRCursorController;
 import org.gearvrf.GVRMain;
+import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
+import org.gearvrf.GVRTexture;
+import org.gearvrf.IAssetEvents;
+import org.gearvrf.OvrGearController;
 import org.gearvrf.gvrsimlephysics.R;
 import org.gearvrf.gvrsimlephysics.entity.Countdown;
 import org.gearvrf.gvrsimlephysics.util.MathUtils;
 import org.gearvrf.gvrsimlephysics.util.VRTouchPadGestureDetector;
+import org.gearvrf.io.CursorControllerListener;
+import org.gearvrf.io.GVRControllerType;
+import org.gearvrf.io.GVRInputManager;
 import org.gearvrf.physics.GVRRigidBody;
 import org.gearvrf.physics.GVRWorld;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject;
+import org.joml.AxisAngle4f;
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
+import org.joml.sampling.BestCandidateSampling;
 
 import java.io.IOException;
 
 public class MainScript extends GVRMain implements GVRSceneObject.ComponentVisitor {
-
+    private static final String TAG = MainScript.class.getSimpleName();
     private final int MAX_BALLS = 40;
     private int SCORE_OFFSET = -50;
     private GVRScene mScene;
     private GVRCameraRig mCamera;
+    private GVRContext mContext;
     private int mTimeTicker = 0;
     private int mScore = 0;
     private int mNumBalls = 0;
@@ -33,9 +50,11 @@ public class MainScript extends GVRMain implements GVRSceneObject.ComponentVisit
     private GVRTextViewSceneObject mBallsLabel;
     private GVRTextViewSceneObject mEndGameLabel;
     private Countdown mCountDown;
+    private GVRSceneObject cursor;
 
     @Override
     public void onInit(GVRContext gvrContext) throws Throwable {
+        mContext = gvrContext;
         mScene = gvrContext.getMainScene();
         mCamera = mScene.getMainCameraRig();
 
@@ -47,14 +66,129 @@ public class MainScript extends GVRMain implements GVRSceneObject.ComponentVisit
 
         addPhysicsWorld(gvrContext, mScene);
 
+        // set up the input manager for the main scene
+        GVRInputManager inputManager = gvrContext.getInputManager();
+        inputManager.addCursorControllerListener(cursorControllerListener);
+        for (GVRCursorController cursor : inputManager.getCursorControllers()) {
+            cursorControllerListener.onCursorControllerAdded(cursor);
+        }
+
         mScene.getEventReceiver().addListener(this);
     }
 
+    private CursorControllerListener cursorControllerListener = new CursorControllerListener() {
+        @Override
+        public void onCursorControllerAdded(GVRCursorController gvrCursorController) {
+            if (gvrCursorController.getControllerType() == GVRControllerType.CONTROLLER) {
+                Log.d(TAG, "Got the orientation remote controller");
+
+                try {
+                    cursor = new GVRSceneObject(mContext, mContext.loadFutureMesh(new
+                            GVRAndroidResource(mContext, "cursor_sphere.obj")),
+                            mContext.getAssetLoader().loadFutureTexture(new GVRAndroidResource
+                                    (mContext, "texture.png")));
+                    cursor.getTransform().setPositionZ(-1.0f);
+
+                } catch (IOException e) {
+                    Log.e(TAG, "Error ", e);
+                }
+
+                gvrCursorController.setSceneObject(cursor);
+                gvrCursorController.addControllerEventListener(controllerEventListener);
+            } else {
+                // disable all other types
+                gvrCursorController.setEnable(false);
+            }
+        }
+
+        @Override
+        public void onCursorControllerRemoved(GVRCursorController gvrCursorController) {
+
+        }
+    };
+
+    private GVRCursorController.ControllerEventListener controllerEventListener = new
+            GVRCursorController.ControllerEventListener() {
+
+                Quaternionf quaternionf = new Quaternionf();
+                long timeStamp;
+
+                Vector3f savedPos = new Vector3f();
+
+
+                @Override
+                public void onEvent(GVRCursorController gvrCursorController) {
+
+
+                    KeyEvent keyEvent = gvrCursorController.getKeyEvent();
+
+                    if (keyEvent != null) {
+
+                        if (keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                            Matrix4f matrix4f = cursor.getTransform().getModelMatrix4f();
+                            matrix4f.getUnnormalizedRotation(quaternionf);
+                            timeStamp = System.currentTimeMillis();
+                            Vector3f vector3f = new Vector3f();
+                            matrix4f.transformPosition(vector3f, savedPos);
+
+                        } else {
+
+
+                            Matrix4f matrix4f = cursor.getTransform().getModelMatrix4f();
+                            Quaternionf currentRot = new Quaternionf();
+                            matrix4f.getUnnormalizedRotation(currentRot);
+
+                            quaternionf.invert();
+                            currentRot.mul(quaternionf, currentRot);
+
+                            double angle = Math.acos(currentRot.w) * 2.0f;
+                            double deg = Math.toDegrees(angle);
+                            quaternionf.identity();
+
+                            if (deg > 180.f) {
+                                deg = 360.f - deg;
+                            }
+
+                            Vector3f vector3f = new Vector3f();
+                            matrix4f.transformPosition(vector3f, vector3f);
+
+                            Vector3f pos = new Vector3f();
+                            vector3f.sub(savedPos, pos);
+
+                            Quaternionf quaternionf = new Quaternionf();
+
+                            quaternionf.rotateY((float) Math.toRadians(45.0f));
+
+                            double Velocity = deg * 50000.0f / (System.currentTimeMillis() -
+                                    timeStamp);
+                            int normal = MathUtils.calculateForce((float) Velocity);
+
+                            pos.rotate(quaternionf);
+                            float[] force = {normal * pos.x, normal * pos.y, normal * pos.z};
+
+                            try {
+                                GVRSceneObject ball = MainHelper.createBall(getGVRContext(),
+                                        vector3f.x, vector3f.y, vector3f.z, force);
+
+                                mScene.addSceneObject(ball);
+                                mNumBalls++;
+
+                                mBallsLabel.setText("Balls: " + (MAX_BALLS - mNumBalls));
+                            } catch (IOException ioe) {
+                                ioe.printStackTrace();
+                            }
+                        }
+                    }
+                }
+            };
+
     private static void initCamera(GVRContext context, GVRCameraRig camera) {
         float intensity = 1.0f;
-        camera.getLeftCamera().setBackgroundColor(1.0f * intensity, 0.956f * intensity, 0.84f * intensity, 1f);
-        camera.getRightCamera().setBackgroundColor(1.0f * intensity, 0.956f * intensity, 0.84f * intensity, 1f);
-        camera.getTransform().setPosition(0.0f, 6.0f, 20f);
+        camera.getLeftCamera().setBackgroundColor(1.0f * intensity, 0.956f * intensity, 0.84f *
+                intensity, 1f);
+        camera.getRightCamera().setBackgroundColor(1.0f * intensity, 0.956f * intensity, 0.84f *
+                intensity, 1f);
+        //camera.getTransform().setPosition(0.0f, 6.0f, 20f);
 
         addGaze(context, camera);
     }
@@ -70,7 +204,7 @@ public class MainScript extends GVRMain implements GVRSceneObject.ComponentVisit
     }
 
     private void addTimer(GVRContext context, GVRScene scene) {
-        GVRTextViewSceneObject label = MainHelper.createLabel(context, 6f, 9f, -5f);
+        GVRTextViewSceneObject label = MainHelper.createLabel(context, 6f, 9f, -25f);
         mCountDown = new Countdown(label);
 
         scene.addSceneObject(label);
@@ -80,11 +214,11 @@ public class MainScript extends GVRMain implements GVRSceneObject.ComponentVisit
 
     private void initLabels(GVRContext context, GVRScene scene) {
         mEndGameLabel = null;
-        mScoreLabel = MainHelper.createLabel(context, 0f, 9f, -5f);
-        mBallsLabel = MainHelper.createLabel(context, -6f, 9f, -5f);
+        mScoreLabel = MainHelper.createLabel(context, 0f, 9f, -25f);
+        mBallsLabel = MainHelper.createLabel(context, -6f, 9f, -25f);
 
         mScoreLabel.setText("Score: 0");
-        mBallsLabel.setText("Balls: " + MAX_BALLS );
+        mBallsLabel.setText("Balls: " + MAX_BALLS);
 
         scene.addSceneObject(mScoreLabel);
         scene.addSceneObject(mBallsLabel);
@@ -109,7 +243,7 @@ public class MainScript extends GVRMain implements GVRSceneObject.ComponentVisit
     }
 
     private static void addGround(GVRContext context, GVRScene scene) {
-        scene.addSceneObject(MainHelper.createGround(context, 0.0f, 0.0f, 0.0f));
+        scene.addSceneObject(MainHelper.createGround(context, 0.0f, -6.0f, -20.0f));
     }
 
     private void addCylinderGroup(GVRContext context, GVRScene scene) {
@@ -124,8 +258,11 @@ public class MainScript extends GVRMain implements GVRSceneObject.ComponentVisit
             for (int y = 0; y < SQUARE_SIZE; y++) {
                 for (int x = 0; x < SQUARE_SIZE - y; x++) {
                     for (int z = 0; z < SQUARE_SIZE; z++) {
-                        addCylinder(context, scene, (x - (SQUARE_SIZE / 2.0f)) * 2.5f + 1.5f + offset,
-                                1f + (y * 1.2f), (z + (SQUARE_SIZE / 2.0f)) * 2.5f - 5f,
+                        addCylinder(context, scene, (x - (SQUARE_SIZE / 2.0f)) * 2.5f + 1.5f +
+                                        offset,
+                                -6.0f + 1f + (y * 1.2f), -20.0f + (z + (SQUARE_SIZE / 2.0f)) *
+                                        2.5f -
+                                        5f,
                                 CYLINDER_COLORS[mNumCylinders++ % CYLINDER_COLORS.length]);
                     }
                 }
@@ -147,6 +284,7 @@ public class MainScript extends GVRMain implements GVRSceneObject.ComponentVisit
                 || gameStopped()) {
             return;
         }
+        Log.d(TAG, "Vel " + velocityX);
 
         int normal = MathUtils.calculateForce(velocityX);
         float[] forward = MathUtils.calculateRotation(mCamera.getHeadTransform()
@@ -186,7 +324,7 @@ public class MainScript extends GVRMain implements GVRSceneObject.ComponentVisit
             if (mScore == mNumCylinders) {
                 mEndGameLabel = new GVRTextViewSceneObject(getGVRContext(),
                         18, 4f, "Congratulations, you won!");
-            } else if (mCountDown.isFinished()){
+            } else if (mCountDown.isFinished()) {
 
                 mEndGameLabel = new GVRTextViewSceneObject(getGVRContext(),
                         18, 4f, "Time out! Try again.");
@@ -206,7 +344,6 @@ public class MainScript extends GVRMain implements GVRSceneObject.ComponentVisit
             // Score
             mScene.getRoot().forAllComponents(this, GVRRigidBody.getComponentType());
         }
-
     }
 
     @Override
@@ -224,7 +361,7 @@ public class MainScript extends GVRMain implements GVRSceneObject.ComponentVisit
             return;
         }
 
-        mScore ++;
+        mScore++;
         mScoreLabel.setText("Score: " + mScore);
     }
 
@@ -233,6 +370,7 @@ public class MainScript extends GVRMain implements GVRSceneObject.ComponentVisit
     }
 
     private boolean gameStopped() {
-        return  mNumBalls == MAX_BALLS || mCountDown.isFinished() || mScore == mNumCylinders;
+        return mNumBalls == MAX_BALLS || mCountDown.isFinished() || mScore == mNumCylinders;
     }
 }
+

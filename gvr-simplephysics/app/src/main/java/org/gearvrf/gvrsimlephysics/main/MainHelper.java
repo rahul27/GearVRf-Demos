@@ -29,7 +29,7 @@ import java.util.concurrent.Future;
  */
 public class MainHelper {
     private static final float CYLINDER_MASS = 0.3f;
-    private static final float BALL_MASS = 0.5f;
+    private static final float BALL_MASS = 0.4f;
     private static final int COLLISION_GROUP_INFINITY_GROUND = 0;
     private static final int COLLISION_GROUP_GROUND = 1;
     private static final int COLLISION_GROUP_BALL = 3;
@@ -140,10 +140,11 @@ public class MainHelper {
     public static GVRSceneObject createBall(GVRContext context, float x, float y, float z,
                                             float[] force) throws IOException {
         Future<GVRTexture> texture = context.loadFutureTexture(new GVRAndroidResource(context, R.drawable.grey));
-        Future<GVRMesh> mesh = context.loadFutureMesh(new GVRAndroidResource(context, "ball.fbx"));
+        Future<GVRMesh> mesh = context.loadFutureMesh(new GVRAndroidResource(context, "sphere" +
+                ".obj"));
 
         GVRSceneObject ballObject = new GVRSceneObject(context, mesh, texture);
-        ballObject.getTransform().setScale(0.7f, 0.7f, 0.7f);
+        //ballObject.getTransform().setScale(0.7f, 0.7f, 0.7f);
         ballObject.getTransform().setPosition(x, y, z);
 
         ballObject.getRenderData().getMaterial().setTexture("diffuseTexture", texture);
