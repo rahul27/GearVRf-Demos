@@ -1,6 +1,7 @@
 package org.gearvrf.sample.controller;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.util.Log;
 import android.view.KeyEvent;
 
@@ -16,9 +17,11 @@ import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.IPickEvents;
+import org.gearvrf.OvrGearController;
 import org.gearvrf.io.CursorControllerListener;
 import org.gearvrf.io.GVRControllerType;
 import org.gearvrf.io.GVRInputManager;
+import org.joml.Vector3f;
 
 import java.io.IOException;
 
@@ -28,7 +31,7 @@ public class SampleMain extends GVRMain {
 
     public static final String TAG = "SampleMain";
 
-    private static final float DEPTH = -0.5f;
+    private static final float DEPTH = -3.5f;
 
     private Context context;
     private GVRContext mGVRContext;
@@ -51,7 +54,7 @@ public class SampleMain extends GVRMain {
     public void onInit(GVRContext gvrContext) {
         mGVRContext = gvrContext;
         mScene = gvrContext.getMainScene();
-        //mPicker = new GVRPicker(gvrContext, mScene);
+        mPicker = new GVRPicker(gvrContext, mScene);
         mScene.getEventReceiver().addListener(mPickHandler);
 
         GVRCameraRig mainCameraRig = mScene.getMainCameraRig();
@@ -78,7 +81,7 @@ public class SampleMain extends GVRMain {
                     sphere = new GVRSceneObject(mGVRContext, mGVRContext.loadFutureMesh(new
                             GVRAndroidResource(mGVRContext, "sphere.obj")), futureTexture);
                     sphere.getTransform().setPosition(0.0f, 0.0f, DEPTH);
-                    sphere.getTransform().setScale(0.05f, 0.05f, 0.05f);
+                    sphere.getTransform().setScale(0.5f, 0.5f, 0.5f);
                     parent.addChildObject(sphere);
 
                     GVRSceneObject cube = new GVRSceneObject(mGVRContext, mGVRContext
@@ -87,15 +90,14 @@ public class SampleMain extends GVRMain {
                     cube.getTransform().setPosition(0.0f, 0.0f, 0.0f);
                     cube.getTransform().setScale(0.05f, 0.05f, 1f);
                     parent.addChildObject(cube);
-                    //mPicker.setPickRay(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, DEPTH);
+
 
                     sphere.getRenderData().setDepthTest(false);
                     sphere.getRenderData().setRenderingOrder(GVRRenderData.GVRRenderingOrder
                             .OVERLAY);
 
                     gvrCursorController.setSceneObject(parent);
-                    mPicker = new GVRPicker(sphere, mScene);
-                    //sphere.attachComponent(mPicker);
+                    parent.attachComponent(mPicker);
 
                     gvrCursorController.addControllerEventListener(controllerEventListener);
                 } catch (IOException e) {
@@ -119,6 +121,10 @@ public class SampleMain extends GVRMain {
                 @Override
                 public void onEvent(GVRCursorController gvrCursorController) {
                     KeyEvent keyEvent = gvrCursorController.getKeyEvent();
+                    OvrGearController controller = (OvrGearController) gvrCursorController;
+                    Vector3f position = controller.getPosition();
+                    //Log.d(TAG, String.format("Position %f %f %f", position.x, position.y,
+                    //        position.z));
                     if (keyEvent != null) {
                         mPickHandler.setClicked(keyEvent.getAction() == KeyEvent.ACTION_DOWN);
                     }
@@ -177,11 +183,11 @@ public class SampleMain extends GVRMain {
     GVRSceneObject test(){
         GVRTexture texture = mGVRContext.loadTexture(new GVRAndroidResource(
                 mGVRContext, R.drawable.__default_splash_screen__));
-        GVRSceneObject sceneObject = new GVRSceneObject(mGVRContext,1.6f,1.2f,
+        GVRSceneObject sceneObject = new GVRSceneObject(mGVRContext,2.6f,2.2f,
                 texture);
         sceneObject.getTransform().setPosition(0f, 0f, DEPTH);
-        sceneObject.getTransform().setScale(0.1f,0.1f,0.1f);
-        GVRMeshCollider collider = new GVRMeshCollider(mGVRContext,sceneObject.getRenderData().getMesh());
+        //sceneObject.getTransform().setScale(0.1f,0.1f,0.1f);
+        GVRMeshCollider collider = new GVRMeshCollider(mGVRContext,true);
         sceneObject.attachComponent(collider);
         // sceneObject.attachComponent(new GVRSphereCollider(getGVRContext()));
         return sceneObject;
