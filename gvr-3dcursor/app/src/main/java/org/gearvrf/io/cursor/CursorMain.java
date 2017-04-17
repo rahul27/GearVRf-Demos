@@ -1005,12 +1005,6 @@ public class CursorMain extends GVRMain {
     }
 
     class MovableObject extends SpaceObject {
-
-        private Vector3f prevCursorPosition;
-        private Quaternionf rotation;
-        private Vector3f cross;
-
-        private GVRSceneObject sceneObject;
         private GVRSceneObject selected;
         private GVRSceneObject selectedParent;
         private GVRSceneObject cursorSceneObject;
@@ -1032,15 +1026,10 @@ public class CursorMain extends GVRMain {
         }
 
         private void initialize() {
-            prevCursorPosition = new Vector3f();
-            rotation = new Quaternionf();
-            cross = new Vector3f();
-            sceneObject = getSceneObject();
         }
 
         @Override
         void handleClickEvent(CursorEvent event) {
-
             if (selected != null && cursor != event.getCursor()) {
                 // We have a selected object but not the correct cursor
                 return;
@@ -1048,58 +1037,39 @@ public class CursorMain extends GVRMain {
 
             cursor = event.getCursor();
             cursorSceneObject = event.getCursor().getSceneObject();
-            prevCursorPosition.set(cursor.getPositionX(), cursor.getPositionY(), cursor
-                    .getPositionZ());
+
             selected = getSceneObject();
             selectedParent = selected.getParent();
-            if (cursor.getCursorType() == CursorType.OBJECT) {
-                GVRTransform selectedTransform = selected.getTransform();
-                cursorModelMatrix.set(cursorSceneObject.getTransform().getModelMatrix());
-                cursorModelMatrix.invert();
-                selectedModelMatrix.set(selectedTransform.getModelMatrix());
-                selectedTransform.setModelMatrix(cursorModelMatrix.mul(selectedModelMatrix));
-                selectedParent.removeChildObject(selected);
-                cursorSceneObject.addChildObject(selected);
-            }
-        }
 
+            GVRTransform selectedTransform = selected.getTransform();
+            cursorModelMatrix.set(cursorSceneObject.getTransform().getModelMatrix());
+            cursorModelMatrix.invert();
+            selectedModelMatrix.set(selectedTransform.getModelMatrix());
+            selectedTransform.setModelMatrix(cursorModelMatrix.mul(selectedModelMatrix));
+            selectedParent.removeChildObject(selected);
+            cursorSceneObject.addChildObject(selected);
+        }
         @Override
         void handleDragEvent(CursorEvent event) {
-
-            if (cursor.getCursorType() == CursorType.LASER && cursor == event.getCursor()) {
-                Cursor cursor = event.getCursor();
-                Vector3f cursorPosition = new Vector3f(cursor.getPositionX(), cursor.getPositionY
-                        (), cursor.getPositionZ());
-                rotateObjectToFollowCursor(cursorPosition);
-                prevCursorPosition = cursorPosition;
-            }
+            //do nothing
         }
 
         @Override
         void handleCursorLeave(CursorEvent event) {
-
             if (event.isActive() && cursor == event.getCursor()) {
-                if (cursor.getCursorType() == CursorType.LASER) {
-                    Vector3f cursorPosition = new Vector3f(cursor.getPositionX(), cursor
-                            .getPositionY(), cursor.getPositionZ());
-                    rotateObjectToFollowCursor(cursorPosition);
-                    prevCursorPosition = cursorPosition;
-                } else if (cursor.getCursorType() == CursorType.OBJECT) {
-                    Log.d(TAG, "handleCursorLeave");
-                    handleClickReleased(event);
-                }
+                Log.d(TAG, "handleCursorLeave");
+                handleClickReleased(event);
             }
         }
 
         @Override
         void handleClickReleased(CursorEvent event) {
-
             if (selected != null && cursor != event.getCursor()) {
                 // We have a selected object but not the correct cursor
                 return;
             }
 
-            if (selected != null && cursor.getCursorType() == CursorType.OBJECT) {
+            if (selected != null) {
                 GVRTransform selectedTransform = selected.getTransform();
                 cursorModelMatrix.set(cursorSceneObject.getTransform().getModelMatrix());
                 cursorSceneObject.removeChildObject(selected);
@@ -1115,39 +1085,6 @@ public class CursorMain extends GVRMain {
                     remaining.invalidate();
                 }
             }
-        }
-
-        private void rotateObjectToFollowCursor(Vector3f cursorPosition) {
-            computeRotation(prevCursorPosition, cursorPosition);
-            sceneObject.getTransform().rotateWithPivot(rotation.w, rotation.x, rotation.y,
-                    rotation.z, 0,
-                    0, 0);
-            sceneObject.getTransform().setRotation(1, 0, 0, 0);
-        }
-
-        /*
-        formulae for quaternion rotation taken from
-        http://lolengine.net/blog/2014/02/24/quaternion-from-two-vectors-final
-        */
-        private void computeRotation(Vector3f start, Vector3f end) {
-            float norm_u_norm_v = (float) Math.sqrt(start.dot(start) * end.dot(end));
-            float real_part = norm_u_norm_v + start.dot(end);
-
-            if (real_part < 1.e-6f * norm_u_norm_v) {
-        /* If u and v are exactly opposite, rotate 180 degrees
-         * around an arbitrary orthogonal axis. Axis normalisation
-         * can happen later, when we normalise the quaternion. */
-                real_part = 0.0f;
-                if (Math.abs(start.x) > Math.abs(start.z)) {
-                    cross = new Vector3f(-start.y, start.x, 0.f);
-                } else {
-                    cross = new Vector3f(0.f, -start.z, start.y);
-                }
-            } else {
-                /* Otherwise, build quaternion the standard way. */
-                start.cross(end, cross);
-            }
-            rotation.set(cross.x, cross.y, cross.z, real_part).normalize();
         }
     }
 
@@ -1194,21 +1131,21 @@ public class CursorMain extends GVRMain {
     private AssetHolder getAssetHolder(String[] meshes, String[] textures) {
         AssetHolder assetHolder = new AssetHolder();
 
-            int state = SpaceObject.INIT;
-            assetHolder.setTuple(state, new AssetObjectTuple(meshMap.get(meshes[state]),
-                    textureMap.get(textures[state])));
+        int state = SpaceObject.INIT;
+        assetHolder.setTuple(state, new AssetObjectTuple(meshMap.get(meshes[state]),
+                textureMap.get(textures[state])));
 
-            state = SpaceObject.CLICKED;
-            assetHolder.setTuple(state, new AssetObjectTuple(meshMap.get(meshes[state]),
-                    textureMap.get(textures[state])));
+        state = SpaceObject.CLICKED;
+        assetHolder.setTuple(state, new AssetObjectTuple(meshMap.get(meshes[state]),
+                textureMap.get(textures[state])));
 
-            state = SpaceObject.OVER;
-            assetHolder.setTuple(state, new AssetObjectTuple(meshMap.get(meshes[state]),
-                    textureMap.get(textures[state])));
+        state = SpaceObject.OVER;
+        assetHolder.setTuple(state, new AssetObjectTuple(meshMap.get(meshes[state]),
+                textureMap.get(textures[state])));
 
-            state = SpaceObject.WIRE;
-            assetHolder.setTuple(state, new AssetObjectTuple(meshMap.get(meshes[state]),
-                    textureMap.get(textures[state])));
+        state = SpaceObject.WIRE;
+        assetHolder.setTuple(state, new AssetObjectTuple(meshMap.get(meshes[state]),
+                textureMap.get(textures[state])));
 
         return assetHolder;
     }
